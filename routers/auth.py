@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models.user import User
 from schemas.user import UserCreate
+from schemas.user import UserCreate, UserLogin
+from security import hash_password, verify_password
 from security import hash_password
 
 router = APIRouter(
@@ -43,4 +45,31 @@ def register(
     return {
         "message": "User registered successfully",
         "user_id": new_user.id
+    }
+@router.post("/login")
+def login(
+    user: UserLogin,
+    db: Session = Depends(get_db)
+):
+
+    db_user = db.query(User).filter(
+        User.email == user.email
+    ).first()
+
+    if not db_user:
+        return {
+            "message": "Invalid email or password"
+        }
+
+    if not verify_password(
+        user.password,
+        db_user.password_hash
+    ):
+        return {
+            "message": "Invalid email or password"
+        }
+
+    return {
+        "message": "Login successful",
+        "user_id": db_user.id
     }
